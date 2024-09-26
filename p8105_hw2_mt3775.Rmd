@@ -1,0 +1,118 @@
+---
+title: "Homework 2"
+author: "Malika Top"
+date: "2024-09-25"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+```
+
+## Problem 1
+```{r transit}
+nyc_transit = 
+  read_csv("data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv") |> 
+  janitor::clean_names()
+# test = 
+#   read_csv("data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv") |> 
+#   janitor::clean_names()
+nyc_subset =
+  nyc_transit |> 
+  select(line:entry, vending, ada) |> 
+  mutate(
+    entry = case_match(entry, "YES" ~ TRUE, "NO" ~ FALSE)
+  )
+# OR:
+# nyc_subset =
+#   nyc_transit |> 
+#   select(line:entry, vending, ada) |> 
+#   mutate(
+#     entry = ifelse(entry == "YES", TRUE, FALSE )
+#   )
+```
+This dataframe contains information about the NYC Transit system's entrances
+and for all stations and lines. Each row represents a station and has information 
+about which line it belongs to, the daytime routes that serve that station, 
+whether it has stairs at the entrance, if it is ADA compliant, and presumably 
+if it has an OMNY vending machine there. If there is a repeat of a station, 
+that means there are multiple entrances. For example, looking at the first few rows: 
+
+```{r}
+slice(nyc_subset, 1:3)
+```
+Stations are identified by station_name and line, so the first row is 25th St 4 Av.
+We see R in the `route1` column, which means that the R train serves this station
+during the day. Looking at the third row though, we see N in `route1` and R in 
+`route2` which means both the N and R train serve this station (but run different
+routes.)
+
+After reading the data in and accounting for NAs, I cleaned using the `janitor` package's
+`clean_names()` function, and select 19 out of the original 32 columns of interest.
+I then converted the `entry` variable to be of `logical` type, rather than just
+character. The dimensions of the dataset are `r ncol(nyc_subset)` columns and
+`r nrow(nyc_subset` rows. However, this data is not tidy because the `route1`...
+`route11` values are spread across separate columns, when it could be just 
+one variable, say `route`. 
+
+```{r transit_explo}
+nyc_dist_subset = 
+  nyc_subset |> 
+  mutate(
+    station_id = paste(station_name, line) # stations are identified both by name and by line 
+  ) |> 
+  relocate(station_id, .after = station_name) |> 
+  distinct(station_id, .keep_all = TRUE)
+
+lapply(nyc_dist_subset, class) # we see that routes 8, 9, 10, 11 are `numeric` class
+tidy_stations =
+  nyc_dist_subset |> 
+  mutate(
+    route8 = as.character(route8),
+    route9 = as.character(route9),
+    route10 = as.character(route10),
+    route11 = as.character(route11)
+  ) |> 
+  pivot_longer(
+    route1:route11,
+    names_to = "route_number",
+    values_to = "route_name"
+  ) |> 
+  relocate(route_number, route_name, .after = station_id) |> 
+  drop_na(route_name)
+```
+
+### What proportion of station entrances / exits without vending allow entrance?
+```{r no_vending}
+# Does entry == FALSE mean that it's an exit?
+no_vending_entry = 
+  nyc_subset |> 
+  filter(vending == "NO") |> # 183 obs
+  filter(entry == TRUE) # 69 obs
+```
+The proportion of station entrances/exits without vending 
+that allow entrance are $\frac{69}{183}$ = 0.377
+
+### How many stations are ADA compliant?
+```{r compliance}
+ada_compliant = 
+  tidy_stations |> 
+  filter(ada==TRUE)
+```
+There are `r nrow(ada_compliant)` stations compliant with ADA.
+
+### How many distinct stations serve the A train? Of the stations that serve the A train, how many are ADA compliant?
+```{r A_train}
+service_A = filter(tidy_stations, route_name == "A")
+ada_A = filter(service_A, ada == TRUE)
+```
+There are `r nrow(service_A)` distinct stations that serve the A. Of the 
+stations serving the A, there are `r nrow(ada_A)` stations that are ADA
+compliant.
+
+## Problem 2
+
+
