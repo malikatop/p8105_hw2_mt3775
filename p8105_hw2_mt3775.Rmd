@@ -54,7 +54,7 @@ After reading the data in and accounting for NAs, I cleaned using the `janitor` 
 `clean_names()` function, and select 19 out of the original 32 columns of interest.
 I then converted the `entry` variable to be of `logical` type, rather than just
 character. The dimensions of the dataset are `r ncol(nyc_subset)` columns and
-`r nrow(nyc_subset` rows. However, this data is not tidy because the `route1`...
+`r nrow(nyc_subset)` rows. However, this data is not tidy because the `route1`...
 `route11` values are spread across separate columns, when it could be just 
 one variable, say `route`. 
 
