@@ -13,13 +13,11 @@ library(dplyr)
 ```
 
 ## Problem 1
-```{r transit}
+```{r transit, message=FALSE}
 nyc_transit = 
   read_csv("data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv") |> 
   janitor::clean_names()
-# test = 
-#   read_csv("data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv") |> 
-#   janitor::clean_names()
+
 nyc_subset =
   nyc_transit |> 
   select(line:entry, vending, ada) |> 
@@ -67,7 +65,7 @@ nyc_dist_subset =
   relocate(station_id, .after = station_name) |> 
   distinct(station_id, .keep_all = TRUE)
 
-lapply(nyc_dist_subset, class) # we see that routes 8, 9, 10, 11 are `numeric` class
+# lapply(nyc_dist_subset, class) # we see that routes 8, 9, 10, 11 are `numeric` class
 tidy_stations =
   nyc_dist_subset |> 
   mutate(
@@ -83,6 +81,8 @@ tidy_stations =
   ) |> 
   relocate(route_number, route_name, .after = station_id) |> 
   drop_na(route_name)
+
+head(tidy_stations)
 ```
 
 ### What proportion of station entrances / exits without vending allow entrance?
