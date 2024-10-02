@@ -56,9 +56,9 @@ After reading the data in and accounting for NAs, I cleaned using the `janitor` 
 `clean_names()` function, and select 19  of the original 32 columns of interest.
 I then converted the `entry` variable to be of `logical` type, rather than just
 character. The dimensions of the dataset are `r ncol(nyc_subset)` columns and
-`r nrow(nyc_subset)` rows. However, this data is not tidy because the `route1`...
+`r nrow(nyc_subset)` rows. However, this data is **not tidy** because the `route1`...
 `route11` values are spread across separate columns, when it could be just 
-one variable, say `route`. 
+one variable, say `route_number`. 
 
 ```{r transit_explo}
 nyc_dist_subset = 
@@ -171,17 +171,20 @@ gwynda = read_excel("data/202409 Trash Wheel Collection Data.xlsx",
 combined_trash = 
   bind_rows(mr_trash, prof_trash, gwynda) 
 combined_trash
+
+total_weight = sum(pull(combined_trash, weight_tons))
+total_homes = sum(pull(combined_trash, homes_powered), na.rm = TRUE)
 ```
 After cleaning, I combined the cleaned individual trash wheel dataframes into 
 one final table. The total number of observations in the resulting dataset is 
 `r nrow(combined_trash)`. Key variables include:
-* `weight_tons`: Combined, they collected a total of 
-`r sum(pull(combined_trash, weight_tons))` tons of trash, equivalent to 
-`r sum(pull(combined_trash, weight_tons))*2000` pounds.
-* `homes_powered`: Combined, they powered 
-`r sum(pull(combined_trash, homes_powered))` homes.
 
-### Professor Trash Wheel and Gwynda
+* `weight_tons`: Combined, they collected a total of 
+`r total_weight` tons of trash.
+* `homes_powered`: Combined, they powered `r total_homes`
+ homes.
+
+#### Professor Trash Wheel and Gwynda
 ```{r sum_stats}
 prof_trash_total_wt = sum(
   combined_trash |> 
@@ -197,21 +200,9 @@ gwynda_cigs_06_22 =
     select(cigarette_butts)
   )
 ```
- Professor Trash Wheel collected in total `r prof_trash_total_wt` tons of trash.
- Gwynda collected `r gwynda_cigs_06_22` cigarette butts in June of 2022. 
+ Professor Trash Wheel collected in total **`r prof_trash_total_wt`** tons of trash.
+ Gwynda collected **18120** cigarette butts in June of 2022. 
  
-```{r kable_vers}
-combined_trash = 
-  bind_rows(mr_trash, prof_trash, gwynda) |> 
-  knitr::kable() |> 
-  kable_styling() |> 
-  kable_paper() |> 
-  scroll_box(width = "1000px", height = "500px")
-  
-combined_trash
-```
-
-
 ## Problem 3
 
 ```{r gbb_import, message=FALSE}
@@ -278,9 +269,7 @@ comb_df =
   relocate(signature_bake, .before = "technical") |> 
   relocate(result, .after = "show_stopper") |> 
   relocate(last_name, .after = "first_name")
-
-write.csv(comb_df, 
-          file = "data/gbb_datasets/combined_gbb.csv")
+comb_df
 ```
 I relocated the columns and organized them so that they were in more meaningful 
 orders (like doing the different sections in order since the signature is 
@@ -299,6 +288,10 @@ There are many NAs in the dataframe though
 because for example if a contestant was eliminated in episode 3, they would still
 exist as a row for episode 4, 5, 6, etc., but since they didn't make anything,
 they would have NAs in the columns for showstopper/technical, etc. 
+```{r export_csv}
+write.csv(comb_df, 
+          file = "data/gbb_datasets/combined_gbb.csv")
+```
 
 
 ```{r star_bakers}
@@ -308,7 +301,8 @@ series_5_10 =
            series == 8 | series == 9 | series == 10) |> 
   filter(result == "STAR BAKER" | result == "WINNER") |> 
   knitr::kable() |> 
-  kable_paper()
+  kable_paper() |> 
+  scroll_box(width = "1000px", height = "500px")
   
 series_5_10
 ```
