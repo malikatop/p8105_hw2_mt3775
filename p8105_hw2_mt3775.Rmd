@@ -268,8 +268,19 @@ comb_df =
   comb_df |> 
   relocate(signature_bake, .before = "technical") |> 
   relocate(result, .after = "show_stopper") |> 
-  relocate(last_name, .after = "first_name")
-comb_df
+  relocate(last_name, .after = "first_name") |> 
+
+# I create a duplicate version to apply kable() for viewer readability
+# purposes, and use the original combined dataframe to apply more operations
+# on
+comb_df_readable = 
+  comb_df |> 
+  relocate(signature_bake, .before = "technical") |> 
+  relocate(result, .after = "show_stopper") |> 
+  relocate(last_name, .after = "first_name") |> 
+  knitr::kable() |> 
+  kable_paper() |> 
+  scroll_box(width = "1000px", height = "500px")
 ```
 I relocated the columns and organized them so that they were in more meaningful 
 orders (like doing the different sections in order since the signature is 
@@ -323,8 +334,6 @@ when I tried to use `filter` on the `series_5_10` table since I had already
 applied `kable()` to it]**
 
 ### Viewers
-Import, clean, tidy, and organize the viewership data in viewers.csv. Show the first 10 rows of this dataset. What was the average viewership in Season 1? In Season 5?
-
 
 ```{r viewers}
 viewers_df = read_csv("data/gbb_datasets/viewers.csv") |> 
@@ -341,6 +350,8 @@ viewers_df = read_csv("data/gbb_datasets/viewers.csv") |>
 
 viewers_df[1:10, ]
 ```
+After cleaning and tidying the data, there appear to be some NA values for 
+Series 1 Episodes 7-10 and Series 2 Episodes 9-10. 
 ```{r avg_views}
 s1_views = 
   viewers_df |> 
