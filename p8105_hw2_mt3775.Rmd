@@ -269,17 +269,8 @@ comb_df =
   relocate(signature_bake, .before = "technical") |> 
   relocate(result, .after = "show_stopper") |> 
   relocate(last_name, .after = "first_name") 
-
-# I create a duplicate version to apply kable() for viewer readability
-# purposes, and use the original combined dataframe to apply more operations
-# on
-comb_df_readable = 
-  comb_df |> 
-  relocate(signature_bake, .before = "technical") |> 
-  relocate(result, .after = "show_stopper") |> 
-  relocate(last_name, .after = "first_name") |> 
-  knitr::kable() 
-comb_df_readable
+head(comb_df)
+tail(comb_df)
 ```
 I relocated the columns and organized them so that they were in more meaningful 
 orders (like doing the different sections in order since the signature is 
@@ -305,15 +296,30 @@ write.csv(comb_df,
 
 
 ```{r star_bakers}
+
 series_5_10 = 
   comb_df |> 
-  filter(series == 5 | series == 6 | series == 7 |
-           series == 8 | series == 9 | series == 10) |> 
-  filter(result == "STAR BAKER" | result == "WINNER") |> 
+  filter(series %in% c(5, 6, 7, 8, 9, 10)) |> 
+  filter(result == "STAR BAKER" | result == "WINNER")
+
+# On Series 5, Episode 7, the string for Richard Burr's Showstopper is 
+# Stair of Éclairs\n(Lavender and Blueberry & Rose and Raspberry Éclairs)"
+# which led to a table that looked weird when I piped kable()
+# so I hard-coded that value to get rid of the "\n"
+series_5_10[7, 7] = "Stair of Éclairs (Lavender and Blueberry 
+& Rose and Raspberry Éclairs)"
+
+series_5_10 = 
+  series_5_10 |> 
   knitr::kable() 
-  
 series_5_10
 ```
+In order to create a reader-friendly table of this data, I wanted to use `kable()`
+but I discovered an issue in one of the `show_stopper` values where there was a 
+`\n` in the string, causing the resulting table to look weird, so I had to fix that.
+I manually hard-coded the cell that was causing the error to be a version
+without the `\n` using indices. 
+
 Looking at the table, some patterns we can see are that most of the star bakers
 that week did good on the technical and people who won the series had gotten
 star baker at least once (at lease for series 5-8). 
