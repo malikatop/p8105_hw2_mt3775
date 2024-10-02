@@ -261,14 +261,14 @@ that one checks out. However, antijoining with `bakes_df` returned an 8x5 tibble
 showing that "Jo" of Series 2 was left out. After some sifting, I found out the
 reason why is because the same contestant is named "Jo" in two dataframes but
 "Joanne" in another, so I had to go back to clean that. After cleaning though,
-`anti_join` returns an empty tibble, so our dataframes are now complete. 
+all the `anti_join`s returns an empty tibble, and our dataframes are now complete. 
 
 ```{r relocate}
 comb_df = 
   comb_df |> 
   relocate(signature_bake, .before = "technical") |> 
   relocate(result, .after = "show_stopper") |> 
-  relocate(last_name, .after = "first_name") |> 
+  relocate(last_name, .after = "first_name") 
 
 # I create a duplicate version to apply kable() for viewer readability
 # purposes, and use the original combined dataframe to apply more operations
@@ -278,9 +278,8 @@ comb_df_readable =
   relocate(signature_bake, .before = "technical") |> 
   relocate(result, .after = "show_stopper") |> 
   relocate(last_name, .after = "first_name") |> 
-  knitr::kable() |> 
-  kable_paper() |> 
-  scroll_box(width = "1000px", height = "500px")
+  knitr::kable() 
+comb_df_readable
 ```
 I relocated the columns and organized them so that they were in more meaningful 
 orders (like doing the different sections in order since the signature is 
@@ -311,9 +310,7 @@ series_5_10 =
   filter(series == 5 | series == 6 | series == 7 |
            series == 8 | series == 9 | series == 10) |> 
   filter(result == "STAR BAKER" | result == "WINNER") |> 
-  knitr::kable() |> 
-  kable_paper() |> 
-  scroll_box(width = "1000px", height = "500px")
+  knitr::kable() 
   
 series_5_10
 ```
