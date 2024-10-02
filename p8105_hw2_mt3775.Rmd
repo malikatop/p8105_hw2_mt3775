@@ -1,16 +1,19 @@
 ---
 title: "Homework 2"
 author: "Malika Top"
-date: "2024-09-25"
+date: "2024-10-02"
 output: github_document
+always_allow_html: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
 library(readxl)
+library(kableExtra)
 ```
 
 ## Problem 1
@@ -38,19 +41,19 @@ and for all stations and lines. Each row represents a station and has informatio
 about which line it belongs to, the daytime routes that serve that station, 
 whether it has stairs at the entrance, if it is ADA compliant, and presumably 
 if it has an OMNY vending machine there. If there is a repeat of a station, 
-that means there are multiple entrances. For example, looking at the first few rows: 
+that means there are multiple entrances/exits. For example, looking at the first few rows: 
 
-```{r}
+```{r subset_example}
 slice(nyc_subset, 1:3)
 ```
-Stations are identified by station_name and line, so the first row is 25th St 4 Av.
+Stations are identified by **station_name and line**, so the first row is 25th St 4 Av.
 We see R in the `route1` column, which means that the R train serves this station
 during the day. Looking at the third row though, we see N in `route1` and R in 
 `route2` which means both the N and R train serve this station (but run different
-routes.)
+routes).
 
 After reading the data in and accounting for NAs, I cleaned using the `janitor` package's
-`clean_names()` function, and select 19 out of the original 32 columns of interest.
+`clean_names()` function, and select 19  of the original 32 columns of interest.
 I then converted the `entry` variable to be of `logical` type, rather than just
 character. The dimensions of the dataset are `r ncol(nyc_subset)` columns and
 `r nrow(nyc_subset)` rows. However, this data is not tidy because the `route1`...
@@ -116,47 +119,76 @@ compliant.
 
 ## Problem 2
 
+### Reading and Cleaning
+For importing the Trash Wheel data, the original .xlsx file has multiple 
+sheets, so we need to specify the corresponding trash wheel in the 
+`read_excel` function. I used `clean_names` to standardize the column names, and
+got rid of the last row which was just the totals of all the columns for all
+the dataframes. I rounded the `sports_balls` variable since some of them
+were doubles, and converted it to be integers. For Mr. Trash, I also had to 
+convert the `year` column to an integer since it was originally of character type.
+
+To all of the individual tables, I added a column characterizing the type of 
+trash wheel the observation belonged to, and relocated that variable to the 
+beginning for better organization. 
 ```{r trash_setup}
-mr_trash = read_excel("data/202309 Trash Wheel Collection Data.xlsx", 
-                      range = "A2:N587", 
+mr_trash = read_excel("data/202409 Trash Wheel Collection Data.xlsx", 
+                      range = "A2:N655", 
                       sheet=1) |> 
             janitor::clean_names() |> 
-            filter(row_number() <= n()-1) |>  #gets rid of the last row which is totals
+            filter(row_number() <= n() - 2) |>  #gets rid of the last row which is totals
             mutate(
               sports_balls = as.integer(round(sports_balls)),
               year = as.integer(year),
               trash_wheel = "mr"
             ) |> 
             relocate(trash_wheel)
-prof_trash = read_excel("data/202309 Trash Wheel Collection Data.xlsx", 
-                      range = "A2:M109",
+prof_trash = read_excel("data/202409 Trash Wheel Collection Data.xlsx", 
+                      range = "A2:M123",
                       sheet=2) |> 
               janitor::clean_names()|> 
-              filter(row_number() <= n()-1) |> #gets rid of the last row which is totals
+              filter(row_number() <= n() - 3) |> #gets rid of the last rows which
+                                                #are totals or empty
               mutate(
                 trash_wheel = "professor"
                 )|> 
             relocate(trash_wheel)
 
-gwynda = read_excel("data/202309 Trash Wheel Collection Data.xlsx", 
-                    range = "A2:L159",
+gwynda = read_excel("data/202409 Trash Wheel Collection Data.xlsx", 
+                    range = "A2:L266",
                     sheet=4) |> 
               janitor::clean_names()|> 
-              filter(row_number() <= n()-2) |>  #gets rid of the last row which is totals
-                                                #also the second to last which was just empty
+              filter(row_number() <= n()-1) |>  #gets rid of the last row which is totals
               mutate(
                 trash_wheel = "gwynda"
               )|> 
             relocate(trash_wheel)
-
-combined_trash = 
-  bind_rows(mr_trash, prof_trash, gwynda) 
-
 ```
 
-```{r}
-total_trash_wt = sum(pull(prof_trash, weight_tons))
-cigs_06_22 = 
+### Combining dataframes
+
+```{r combined_df}
+combined_trash = 
+  bind_rows(mr_trash, prof_trash, gwynda) 
+combined_trash
+```
+After cleaning, I combined the cleaned individual trash wheel dataframes into 
+one final table. The total number of observations in the resulting dataset is 
+`r nrow(combined_trash)`. Key variables include:
+* `weight_tons`: Combined, they collected a total of 
+`r sum(pull(combined_trash, weight_tons))` tons of trash, equivalent to 
+`r sum(pull(combined_trash, weight_tons))*2000` pounds.
+* `homes_powered`: Combined, they powered 
+`r sum(pull(combined_trash, homes_powered))` homes.
+
+### Professor Trash Wheel and Gwynda
+```{r sum_stats}
+prof_trash_total_wt = sum(
+  combined_trash |> 
+  filter(trash_wheel == "professor") |> 
+  select(weight_tons)
+  )
+gwynda_cigs_06_22 = 
   sum(
     combined_trash |> 
     filter(trash_wheel == "gwynda" &
@@ -164,28 +196,46 @@ cigs_06_22 =
          & year == 2022) |> 
     select(cigarette_butts)
   )
-  
 ```
+ Professor Trash Wheel collected in total `r prof_trash_total_wt` tons of trash.
+ Gwynda collected `r gwynda_cigs_06_22` cigarette butts in June of 2022. 
+ 
+```{r kable_vers}
+combined_trash = 
+  bind_rows(mr_trash, prof_trash, gwynda) |> 
+  knitr::kable() |> 
+  kable_styling() |> 
+  kable_paper() |> 
+  scroll_box(width = "1000px", height = "500px")
+  
+combined_trash
+```
+
 
 ## Problem 3
 
-```{r gbb}
-bakers_df = read_csv("data/gbb_datasets/bakers.csv") |> 
+```{r gbb_import, message=FALSE}
+bakers_df = read_csv("data/gbb_datasets/bakers.csv",
+                     na = c("NA", "UNKNOWN", "N/A", "")) |> 
   janitor::clean_names() |> 
   separate_wider_delim(baker_name, " ", names=c("first_name",
                                                 "last_name")) 
 bakers_df$first_name[bakers_df$first_name=="Jo"] <- "Joanne"  
 
-bakes_df = read_csv("data/gbb_datasets/bakes.csv")|> 
+bakes_df = read_csv("data/gbb_datasets/bakes.csv",
+                    na = c("NA", "UNKNOWN", "N/A", ""))|> 
   janitor::clean_names() |> 
   rename(first_name = baker) |> 
   mutate(first_name = gsub('"', '', first_name))
 bakes_df$first_name[bakes_df$first_name=="Jo"] <- "Joanne"
            
-results_df = read_csv("data/gbb_datasets/results.csv", skip=2) |> 
+results_df = read_csv("data/gbb_datasets/results.csv", 
+                      na = c("NA", "UNKNOWN", "N/A", ""),
+                      skip=2) |> 
   janitor::clean_names() |> 
   rename(first_name = baker)
 ```
+
 The `bakers_df` has information about the contestants, for which there are 12 each 
 series, and a total of 10 series. The number of episodes per series ranges from
 6-10. `bakes_df` contains information about how someone did in a technical, 
@@ -195,8 +245,7 @@ starting with `results_df` so we don't lose any additional information. There ar
 many missing NA values but that makes sense, because once a contestant is 
 eliminated, there should not be information on their bakes/how they did. 
 
-For 
-cleaning, I separated the original `baker_name` column in `bakers_df` to have 
+For cleaning, I separated the original `baker_name` column in `bakers_df` to have 
 just first name, to match the other tables. 
 
 In thinking about how to combine these dataframes together, I considered using
@@ -204,13 +253,14 @@ In thinking about how to combine these dataframes together, I considered using
 using `right_join` or `full_join` would not be necessary since we know that the
 `bakes_df` does not have all the information to match `results_df` anyways. 
 
-```{r}
+```{r join_df}
 comb_df = results_df |> 
   left_join(bakes_df, by = c("series", "episode", "first_name")) |> 
   left_join(bakers_df, by = c("series", "first_name"))
 ```
+
 ### Checking for completeness and correctness
-```{r}
+```{r anti_joins}
 anti_join(results_df, comb_df, by = c("series", "episode", "first_name"))
 anti_join(bakes_df, comb_df, by = c("series", "episode", "first_name"))
 anti_join(bakers_df, comb_df, by = c("series", "first_name"))
@@ -218,14 +268,96 @@ anti_join(bakers_df, comb_df, by = c("series", "first_name"))
 Checking the merged dataframe against `results_df`, we get an empty table, so
 that one checks out. However, antijoining with `bakes_df` returned an 8x5 tibble
 showing that "Jo" of Series 2 was left out. After some sifting, I found out the
-reason why is because the same contestant is named "Jo" in the 
-This combined dataframe has information about how each contestant did, what they 
-baked, and basic background facts like hometown. 
-```{r}
+reason why is because the same contestant is named "Jo" in two dataframes but
+"Joanne" in another, so I had to go back to clean that. After cleaning though,
+`anti_join` returns an empty tibble, so our dataframes are now complete. 
+
+```{r relocate}
 comb_df = 
   comb_df |> 
   relocate(signature_bake, .before = "technical") |> 
-  relocate(result, .after = "show_stopper")
+  relocate(result, .after = "show_stopper") |> 
+  relocate(last_name, .after = "first_name")
+
+write.csv(comb_df, 
+          file = "data/gbb_datasets/combined_gbb.csv")
 ```
+I relocated the columns and organized them so that they were in more meaningful 
+orders (like doing the different sections in order since the signature is 
+completed first, then the technical, then the showstopper). I put the
+contestant hometown and occupation information at the end though since they felt 
+less relevant (perhaps less of a precursor and more of a footnote). 
+
+For the final dataframe, each row is the result for each contestant in a 
+specific episode. It shows what that baker baked for their signature, what they
+placed in the technical, what they baked for the showstopper, and whether they 
+were eliminated or named Star Baker. For final episodes, the dataframe
+also tells us if that person won or was a runner-up. There is also biographical
+information for each contestant. 
+
+There are many NAs in the dataframe though 
+because for example if a contestant was eliminated in episode 3, they would still
+exist as a row for episode 4, 5, 6, etc., but since they didn't make anything,
+they would have NAs in the columns for showstopper/technical, etc. 
 
 
+```{r star_bakers}
+series_5_10 = 
+  comb_df |> 
+  filter(series == 5 | series == 6 | series == 7 |
+           series == 8 | series == 9 | series == 10) |> 
+  filter(result == "STAR BAKER" | result == "WINNER") |> 
+  knitr::kable() |> 
+  kable_paper()
+  
+series_5_10
+```
+Looking at the table, some patterns we can see are that most of the star bakers
+that week did good on the technical and people who won the series had gotten
+star baker at least once (at lease for series 5-8). 
+```{r technical_scores}
+tech_scores = 
+    comb_df |> 
+    filter(series == 5 | series == 6 | series == 7 |
+           series == 8 | series == 9 | series == 10) |>
+    filter(result == "STAR BAKER") |> 
+    pull(technical)
+```
+The average technical score for people who had been star baker that week was 
+2.888. **[NOTE: I had to calculate this the long way because there was an error
+when I tried to use `filter` on the `series_5_10` table since I had already
+applied `kable()` to it]**
+
+### Viewers
+Import, clean, tidy, and organize the viewership data in viewers.csv. Show the first 10 rows of this dataset. What was the average viewership in Season 1? In Season 5?
+
+
+```{r viewers}
+viewers_df = read_csv("data/gbb_datasets/viewers.csv") |> 
+  janitor::clean_names() |> 
+  pivot_longer(
+    cols = series_1:series_10,
+    names_to = "series",
+    values_to = "viewers_in_millions",
+    names_prefix = "series_"
+  ) |> 
+  mutate(series = as.numeric(series)) |> 
+  relocate(series) |> 
+  arrange(series)
+
+viewers_df[1:10, ]
+```
+```{r avg_views}
+s1_views = 
+  viewers_df |> 
+  filter(series == 1) |> 
+  pull(viewers_in_millions)
+
+s5_views = 
+  viewers_df |> 
+  filter(series == 5) |> 
+  pull(viewers_in_millions)
+```
+The average viewership for series 1 is `r mean(s1_views, na.rm = TRUE)` million and
+`r mean(s5_views)` million for series 5, so we see a great growth in viewers, 
+assuming that the NA values for series 1 are similar to the rest.
