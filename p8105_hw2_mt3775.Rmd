@@ -173,15 +173,17 @@ combined_trash =
 combined_trash
 
 total_weight = sum(pull(combined_trash, weight_tons))
+total_weight
 total_homes = sum(pull(combined_trash, homes_powered), na.rm = TRUE)
+total_homes
 ```
 After cleaning, I combined the cleaned individual trash wheel dataframes into 
 one final table. The total number of observations in the resulting dataset is 
 `r nrow(combined_trash)`. Key variables include:
 
 * `weight_tons`: Combined, they collected a total of 
-`r total_weight` tons of trash.
-* `homes_powered`: Combined, they powered `r total_homes`
+3135.47 tons of trash.
+* `homes_powered`: Combined, they powered 44821.67
  homes.
 
 #### Professor Trash Wheel and Gwynda
@@ -191,6 +193,7 @@ prof_trash_total_wt = sum(
   filter(trash_wheel == "professor") |> 
   select(weight_tons)
   )
+prof_trash_total_wt
 gwynda_cigs_06_22 = 
   sum(
     combined_trash |> 
@@ -199,6 +202,7 @@ gwynda_cigs_06_22 =
          & year == 2022) |> 
     select(cigarette_butts)
   )
+gwynda_cigs_06_22
 ```
  Professor Trash Wheel collected in total **`r prof_trash_total_wt`** tons of trash.
  Gwynda collected **18120** cigarette butts in June of 2022. 
@@ -306,8 +310,7 @@ series_5_10 =
 # Stair of Éclairs\n(Lavender and Blueberry & Rose and Raspberry Éclairs)"
 # which led to a table that looked weird when I piped kable()
 # so I hard-coded that value to get rid of the "\n"
-series_5_10[7, 7] = "Stair of Éclairs (Lavender and Blueberry 
-& Rose and Raspberry Éclairs)"
+series_5_10[7, 7] = "Stair of Éclairs (Lavender and Blueberry & Rose and Raspberry Éclairs)"
 
 series_5_10 = 
   series_5_10 |> 
@@ -315,10 +318,10 @@ series_5_10 =
 series_5_10
 ```
 In order to create a reader-friendly table of this data, I wanted to use `kable()`
-but I discovered an issue in one of the `show_stopper` values where there was a 
-`\n` in the string, causing the resulting table to look weird, so I had to fix that.
-I manually hard-coded the cell that was causing the error to be a version
-without the `\n` using indices. 
+but I discovered an issue in one of the `show_stopper` values where there was a
+hidden `\n` in the string, causing the resulting table to look weird, so I had 
+to fix that. I manually hard-coded the cell that was causing the error to be a 
+version without the `\n` using indices. 
 
 Looking at the table, some patterns we can see are that most of the star bakers
 that week did good on the technical and people who won the series had gotten
@@ -351,7 +354,7 @@ viewers_df = read_csv("data/gbb_datasets/viewers.csv") |>
   relocate(series) |> 
   arrange(series)
 
-viewers_df[1:10, ]
+kable(viewers_df[1:10, ])
 ```
 After cleaning and tidying the data, there appear to be some NA values for 
 Series 1 Episodes 7-10 and Series 2 Episodes 9-10. 
